@@ -14,6 +14,7 @@ import re
 import string
 import emojis
 import praw
+from datetime import datetime
 import pandas as pd
 from langdetect import detect_langs
 from prawcore.exceptions import TooManyRequests
@@ -22,7 +23,7 @@ from prawcore.exceptions import TooManyRequests
 def setup_access(client_id, client_secret, password, user_agent, username):
     """Create an instance for API access"""
 
-    print("Initializing API Instance.")
+    print("API Instance initialized.")
 
     instance = praw.Reddit(
         client_id=client_id,
@@ -34,7 +35,9 @@ def setup_access(client_id, client_secret, password, user_agent, username):
     return instance
 
 
-def get_posts_list(api_instance, subreddit_name, post_filter, time_period, n_posts):
+def get_posts_list(
+    api_instance, subreddit_name, post_filter: str, time_period, n_posts
+):
     """Takes the name of a subreddit, a time period, and the desired number of submissions
     and returns a list of the URLs of that subreddit's top posts.
 
@@ -50,19 +53,19 @@ def get_posts_list(api_instance, subreddit_name, post_filter, time_period, n_pos
             time_filter=time_period, limit=n_posts
         )
         # return generator outputs as a list
-        return [submission.id for submission in submission_generator]
+        return [str(submission.id) for submission in submission_generator]
 
     elif post_filter == "new":
         submission_generator = api_instance.subreddit(subreddit_name).new(
             time_filter=time_period, limit=n_posts
         )
-        return [submission.id for submission in submission_generator]
+        return [str(submission.id) for submission in submission_generator]
 
     elif post_filter == "hot":
         submission_generator = api_instance.subreddit(subreddit_name).hot(
             time_filter=time_period, limit=n_posts
         )
-        return [submission.id for submission in submission_generator]
+        return [str(submission.id) for submission in submission_generator]
 
 
 def get_post_comments_ids(reddit, submission_id):
@@ -80,7 +83,9 @@ def get_comment_author(reddit, comment_id):
     return str(reddit.comment(comment_id).author)
 
 
-def sample_reddit(api_instance, seed_subreddits, post_filter, time_period, n_posts):
+def sample_reddit(
+    api_instance, seed_subreddits, post_filter, time_period, n_posts, log_file_path
+):
     """Generate a snowball sample from a list of subreddits. From the subreddits, get a
     list `n_submissions` number of of posts from `time_period`. From each post, get a list of
     comments and from each comment, get the author. Write the author to a CSV and return a
@@ -99,6 +104,8 @@ def sample_reddit(api_instance, seed_subreddits, post_filter, time_period, n_pos
     - comments_to_users: a dictionary mapping comment IDs to usernames
     - users: a dictionary with a single key "users" mapping to a list of usernames
     """
+    start_time = time.time()
+
     # initialize sample logging dicts
     subreddits_to_posts = {}
     posts_to_comments = {}
@@ -121,30 +128,30 @@ def sample_reddit(api_instance, seed_subreddits, post_filter, time_period, n_pos
 
         # iterate through the posts, retreiving their comment IDs
         for i, post in enumerate(posts):
-
             comments = get_post_comments_ids(reddit=api_instance, submission_id=post)
-
             posts_to_comments.update({post: comments})
 
             # iterate through the comments, retreiving each one's author
             for comment in comments:
-
                 user = get_comment_author(reddit=api_instance, comment_id=comment)
-
                 # add the new comment/user pair to the dict
                 comments_to_users.update({comment: user})
-
                 # append user/comment pair to dict
                 users["users"].append(user)
 
                 time.sleep(0.5)
+            # logging
+            log_string = f'{datetime.now()} - Finished Post {i + 1} of seed "{seed}"\n'
+            log_to_file(f"{log_file_path}sample_log{datetime.now()}.txt", log_string)
 
     output_dict = {
         "subreddits_to_posts": subreddits_to_posts,
         "posts_to_comments": posts_to_comments,
         "comments_to_users": comments_to_users,
-        "users": users,
+        "users": users["users"],
     }
+
+    print(f"Sample complete. Time elapsed: {(time.time() - start_time) / 60} minutes")
 
     return output_dict, users
 

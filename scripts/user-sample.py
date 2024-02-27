@@ -18,10 +18,10 @@ import sampleReddit as sr
 # specify file paths for your project
 # =============================================================================
 # the path to your project directory
-PROJECT_PATH = "/path/to/your/project/directory/"
+# PROJECT_PATH = "/path/to/your/project/directory/"
 PROJECT_PATH = "/home/reed/Projects/learned-toxicity-reddit/reddit-api/"  # TESTING
 # the path to the directory where you want your output files to be saved
-OUTPUT_PATH = f"{PROJECT_PATH}name of data folder/"  # TESTING
+# OUTPUT_PATH = f"{PROJECT_PATH}name of data folder/"  # TESTING
 OUTPUT_PATH = f"{PROJECT_PATH}data/"
 # where log files will be saved
 LOG_FILE_PATH = f"{PROJECT_PATH}logs/"
@@ -60,6 +60,7 @@ sampling_frame, users_df = sr.sample_reddit(
     post_filter=filter,
     time_period=time_period,
     n_posts=n_posts,
+    log_file_path=LOG_FILE_PATH,
 )
 
 # =============================================================================
