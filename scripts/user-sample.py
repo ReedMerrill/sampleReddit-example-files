@@ -1,113 +1,61 @@
-"""A job script that samples Reddit users from an initial list of subreddits.
+"""An example script of how to perform snowball sampling from Reddit using the SSRA package.
+
+Pre-requisites:
+    1. A Reddit user account (the regular kind, for people to use the website)
+    2. Reddit API credentials
+        - follow this to set them up: https://github.com/reddit-archive/reddit/wiki/OAuth2-App-Types#script-app
+        - after setting up your credentials, you will have a client_id, client_secret, and user_agent
+    3. A version of Python 3 installed on your machine
+    4. The SSRA python package is install
 """
 
 import json
 import time
 import datetime
-from snow_roll import sample
+import SSRA
 
-
-# single sub for testing
-PROJECT_PATH = "/home/reed/Projects/learned-toxicity-reddit/reddit-api/"
-INPUT_PATH = f"{PROJECT_PATH}data/seed-subreddits.json"
+# =============================================================================
+# specify file paths for your project
+# =============================================================================
+# the path to your project directory
+PROJECT_PATH = "/path/to/your/project/directory/"
+PROJECT_PATH = "/home/reed/Projects/learned-toxicity-reddit/reddit-api/"  # TESTING
+# the path to the directory where you want your output files to be saved
+OUTPUT_PATH = f"{PROJECT_PATH}name of data folder/"  # TESTING
 OUTPUT_PATH = f"{PROJECT_PATH}data/"
+# where log files will be saved
+LOG_FILE_PATH = f"{PROJECT_PATH}logs/"
 
-# log file setup
-LOG_DESC = "sample"
-LOG_FILE_PATH = f"{PROJECT_PATH}logs/{LOG_DESC}_{datetime.datetime.now()}.txt"
+# =============================================================================
+# Set up authentication with the Reddit API
+# =============================================================================
 
-# load sample seeds
-SEEDS_DICT = json.load(open(INPUT_PATH))
-SEED_SUBREDDITS = SEEDS_DICT["all"]
+instance = SSRA.setup_access(
+    client_id="your client id",
+    client_secret="your client secret",
+    password="your password",
+    user_agent="your user agent",
+    username="your Reddit username",
+)
 
+# =============================================================================
+# set subreddit sample parameters
+# =============================================================================
+# the names of subreddits to sample
+subreddits = ["politics", "Republican", "democrats"]
+# How to filter posts within a subreddit. Can be "top", "new", or "hot".
+filter = "top"
+# How far back to go. Can be "all", "day", "hour", "month", "week", or "year" .
+time_period = "year"
+# the number of posts per subreddit to sample. Higher numbers significantly increase run time.
+n_posts = 3
 
-def main():
-    """Iterate through the sampling structure, saving the elements used in
-    sampling at each level.
-    """
-
-    start = time.time()
-
-    print("Initializing API Instance")
-
-    reddit = sample.setup_access()
-
-    print("Initialization complete.")
-
-    # set subreddit sample parameters
-    time_period = "year"
-    n_submissions = 3
-
-    # initialize sample logging dicts
-    seed_to_posts = {}
-    post_to_comments = {}
-    comment_to_user = {}
-    users = {"users": []}
-
-    # initialize output CSV
-    with open(OUTPUT_PATH + "user-sample.csv", "a") as outfile:
-        outfile.write("users\n")
-
-    # iterate through the seed subreddits, getting a list of top posts IDs
-    for seed in SEED_SUBREDDITS:
-
-        posts = sample.get_top_posts(
-            reddit=reddit,
-            subreddit_name=seed,
-            time_period=time_period,
-            n_submissions=n_submissions,
-        )
-
-        # add a key "seed" with the post IDs as items
-        seed_to_posts.update({seed: posts})
-
-        # iterate through the posts, retreiving their comment IDs
-        for i, post in enumerate(posts):
-
-            comments = sample.get_post_comments_ids(reddit=reddit, submission_id=post)
-
-            post_to_comments.update({post: comments})
-
-            # iterate through the comments, retreiving each one's author
-            for comment in comments:
-
-                user = sample.get_comment_author(reddit=reddit, comment_id=comment)
-
-                # add the new comment/user pair to the dict
-                comment_to_user.update({comment: user})
-
-                # append user/comment pair to dict
-                users["users"].append(user)
-
-                # append the values to the output CSV
-                with open(OUTPUT_PATH + "user-sample.csv", "a") as outfile:
-                    outfile.write(f"{user}\n")
-
-                time.sleep(0.5)
-
-            log_string = (
-                f'{datetime.datetime.now()} - Finished Post {i + 1} of seed "{seed}"\n'
-            )
-            # logging to file
-            with open(LOG_FILE_PATH, "a") as log_file:
-                log_file.write(log_string)
-
-    output_dict = {
-        "seed_to_posts": seed_to_posts,
-        "post_to_comments": post_to_comments,
-        "comment_to_user": comment_to_user,
-    }
-
-    # output sampling procedure
-    with open(OUTPUT_PATH + "sampling-prodecure.json", "w") as outfile:
-        json.dump(output_dict, outfile, indent=4)
-
-    finished = time.time()
-
-    job_time = (finished - start) / 60
-
-    print(f"Job took {job_time} minutes")
-
-
-if __name__ == "__main__":
-    main()
+# =============================================================================
+# Call the sampling function
+# =============================================================================
+# sample the subreddits
+sampled_posts = SSRA.sample_reddit(
+    api_instance=instance,
+    seed_subreddits=subreddits,
+    filter, time_period, n_posts
+)
