@@ -6,13 +6,13 @@ Pre-requisites:
         - follow this to set them up: https://github.com/reddit-archive/reddit/wiki/OAuth2-App-Types#script-app
         - after setting up your credentials, you will have a client_id, client_secret, and user_agent
     3. A version of Python 3 installed on your machine
-    4. The SSRA python package is install
+    4. The sampleReddit python package is install
 """
 
 import json
 import time
 import datetime
-import SSRA
+import sampleReddit as sr
 
 # =============================================================================
 # specify file paths for your project
@@ -30,7 +30,7 @@ LOG_FILE_PATH = f"{PROJECT_PATH}logs/"
 # Set up authentication with the Reddit API
 # =============================================================================
 
-instance = SSRA.setup_access(
+instance = sr.setup_access(
     client_id="your client id",
     client_secret="your client secret",
     password="your password",
@@ -48,14 +48,25 @@ filter = "top"
 # How far back to go. Can be "all", "day", "hour", "month", "week", or "year" .
 time_period = "year"
 # the number of posts per subreddit to sample. Higher numbers significantly increase run time.
-n_posts = 3
+n_posts = 1
 
 # =============================================================================
 # Call the sampling function
 # =============================================================================
 # sample the subreddits
-sampled_posts = SSRA.sample_reddit(
+sampling_frame, users_df = sr.sample_reddit(
     api_instance=instance,
     seed_subreddits=subreddits,
-    filter, time_period, n_posts
+    post_filter=filter,
+    time_period=time_period,
+    n_posts=n_posts,
 )
+
+# =============================================================================
+# Save the data
+# =============================================================================
+# save the sampling frame
+with open(f"{OUTPUT_PATH}sampling_frame.json", "w") as f:
+    json.dump(sampling_frame, f, indent=2)
+# save the users dataframe
+users_df.to_csv(f"{OUTPUT_PATH}users.csv", index=False)

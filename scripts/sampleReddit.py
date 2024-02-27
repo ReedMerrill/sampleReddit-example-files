@@ -34,7 +34,7 @@ def setup_access(client_id, client_secret, password, user_agent, username):
     return instance
 
 
-def get_top_posts(api_instance, subreddit_name, time_period, n_submissions):
+def get_posts_list(api_instance, subreddit_name, post_filter, time_period, n_posts):
     """Takes the name of a subreddit, a time period, and the desired number of submissions
     and returns a list of the URLs of that subreddit's top posts.
 
@@ -43,12 +43,26 @@ def get_top_posts(api_instance, subreddit_name, time_period, n_submissions):
     and is more efficient.
     Returns: list of top post URLs
     """
-    # create the generator
-    submission_generator = api_instance.subreddit(subreddit_name).top(
-        time_filter=time_period, limit=n_submissions
-    )
-    # return generator outputs as a list
-    return [submission.id for submission in submission_generator]
+    # conditions for the filter type
+    if post_filter == "top":
+        # create the generator
+        submission_generator = api_instance.subreddit(subreddit_name).top(
+            time_filter=time_period, limit=n_posts
+        )
+        # return generator outputs as a list
+        return [submission.id for submission in submission_generator]
+
+    elif post_filter == "new":
+        submission_generator = api_instance.subreddit(subreddit_name).new(
+            time_filter=time_period, limit=n_posts
+        )
+        return [submission.id for submission in submission_generator]
+
+    elif post_filter == "hot":
+        submission_generator = api_instance.subreddit(subreddit_name).hot(
+            time_filter=time_period, limit=n_posts
+        )
+        return [submission.id for submission in submission_generator]
 
 
 def get_post_comments_ids(reddit, submission_id):
@@ -66,7 +80,7 @@ def get_comment_author(reddit, comment_id):
     return str(reddit.comment(comment_id).author)
 
 
-def sample_reddit(api_instance, seed_subreddits, time_period, n_submissions):
+def sample_reddit(api_instance, seed_subreddits, post_filter, time_period, n_posts):
     """Generate a snowball sample from a list of subreddits. From the subreddits, get a
     list `n_submissions` number of of posts from `time_period`. From each post, get a list of
     comments and from each comment, get the author. Write the author to a CSV and return a
@@ -94,11 +108,12 @@ def sample_reddit(api_instance, seed_subreddits, time_period, n_submissions):
     # iterate through the seed subreddits, getting a list of top posts IDs
     for seed in seed_subreddits:
 
-        posts = get_top_posts(
+        posts = get_posts_list(
             api_instance=api_instance,
             subreddit_name=seed,
+            post_filter=post_filter,
             time_period=time_period,
-            n_submissions=n_submissions,
+            n_posts=n_posts,
         )
 
         # add a key "seed" with the post IDs as items
@@ -131,7 +146,7 @@ def sample_reddit(api_instance, seed_subreddits, time_period, n_submissions):
         "users": users,
     }
 
-    return output_dict
+    return output_dict, users
 
 
 def get_user_comments(
