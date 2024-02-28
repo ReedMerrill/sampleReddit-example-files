@@ -238,6 +238,45 @@ def get_user_comments(
             break
 
 
+def get_comments(
+    api_instance,
+    input_path,
+    output_path,
+    log_path,
+    comment_limit=1000,
+):
+    """Gets an API instance, cleans the usernames, fetches all comments for
+    each user, then fetches each comment's metadata.
+    """
+    # initialize log file
+    start_time = time.time()
+    log_to_file(log_path, f"{datetime.now()} - Begin Fetching comments...\n")
+    # setup a PRAW reddit instance
+    # read in users subset
+    users = pd.read_csv(input_path)
+    users_list = list(users["users"])
+    # iterate over list of user, extracting each user's comment metadata
+    for i, user in enumerate(users_list):
+        # initialize dict to store a single user's comments
+        # make comment metadata dict using reddit API
+        get_user_comments(
+            reddit=api_instance,
+            user_id=user,
+            limit=comment_limit,
+            out_file_path=output_path,
+            log_path=log_path,
+        )
+        estimate = estimate_time_remaining(
+            task_index=i, total_tasks=len(users_list), start_time=start_time
+        )
+        print(f"Finished collecting comment data for user {i + 1}")
+        print(f"Time remaining: ~{estimate} hours")
+    # final logging
+    total_time_hours = (time.time() - start_time) / 3600
+    print(f"Total Time Elapsed: {total_time_hours}")
+    log_to_file(log_path, f"Total Time Elapsed: {total_time_hours}")
+
+
 def get_user_metadata(
     reddit,
     user_id,
