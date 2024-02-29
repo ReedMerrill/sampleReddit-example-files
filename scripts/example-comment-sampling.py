@@ -1,4 +1,4 @@
-"""An example script of how to perform snowball sampling from Reddit using the SSRA package.
+"""An example script of how to perform snowball sampling from Reddit using the sampleReddit Python package.
 
 Pre-requisites:
     1. A Reddit user account (the regular kind, for people to use the website)
@@ -15,6 +15,9 @@ import sampleReddit as sr
 # =============================================================================
 # specify file paths for your project
 # =============================================================================
+"""Here we define some constants that will be used to tell python where to get
+files from and where to save the script's outputs.
+"""
 # the path to your project directory
 # PROJECT_PATH = "/path/to/your/project/directory/"
 PROJECT_PATH = "/home/reed/Projects/learned-toxicity-reddit/reddit-api/"  # TESTING
@@ -62,7 +65,7 @@ sampling_frame, users_df = sr.sample_reddit(
 )
 
 # =============================================================================
-# Save the sample frame data and list of users
+# Save the sample frame and list of users
 # =============================================================================
 # save the sampling frame
 with open(f"{OUTPUT_PATH}sampling_frame.json", "w") as f:
@@ -79,7 +82,10 @@ comments for every user. The maximum number of comments that Reddit allows is
 the post and subreddit the comment was made on, the comment's timestamp, the
 parent comment, and the comment's upvotes.
 
-It saves this data to the location specified in COMMENTS_OUTPUT.
+It incrementally saves this data to the location specified in COMMENTS_OUTPUT as
+the data is collected. This is helpful because collecting comments can take
+hours or even days to run, and incrementally saving data prevents total loss of
+your progress if something goes wrong (like your laptop running out of battery).
 """
 
 USERS_LIST = f"{PROJECT_PATH}data/user.csv"
